@@ -3,7 +3,6 @@ from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
-
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
@@ -36,23 +35,19 @@ def should_search(question: str) -> bool:
             },
         ],
     )
-
     decision = response.choices[0].message.content.strip().lower()
-
     print(f"Model decision: {decision}")
-
-    # Only an explicit DIRECT decision skips retrieval.
-    # Anything unexpected safely defaults to SEARCH.
     if "direct" in decision:
         return False
-
     return True
 
 
-# Manual tests
-print("Stack:", should_search("What is a stack?"))
-print("2 + 2:", should_search("What's 2+2?"))
-print(
-    "Ambiguous:",
-    should_search("Can I use a stack for something other than what's in the docs?")
-)
+if __name__ == "__main__":
+    print("Stack:", should_search("What is a stack?"))
+    print("2 + 2:", should_search("What's 2+2?"))
+    print(
+        "Ambiguous:",
+        should_search(
+            "Can I use a stack for something other than what's in the docs?"
+        )
+    )
