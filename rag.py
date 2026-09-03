@@ -8,7 +8,7 @@ from sentence_transformers import SentenceTransformer
 import chromadb
 
 
-# Configuration 
+# Configuration
 
 load_dotenv()
 
@@ -74,7 +74,6 @@ collection = chroma_client.get_or_create_collection(
     name="data_structures"
 )
 
-
 ids = [f"chunk_{i}" for i in range(len(all_chunks))]
 
 collection.upsert(
@@ -87,9 +86,9 @@ collection.upsert(
 print(f"Stored {len(all_chunks)} chunks in Chroma")
 
 
-# RAG question answering
+# Shared retrieval
 
-def ask(question: str) -> str:
+def retrieve(question: str):
     question_embedding = model.encode([question])[0]
 
     results = collection.query(
@@ -97,8 +96,13 @@ def ask(question: str) -> str:
         n_results=3,
     )
 
-    documents = results["documents"][0]
-    metadatas = results["metadatas"][0]
+    return results["documents"][0], results["metadatas"][0]
+
+
+# RAG question answering
+
+def ask(question: str) -> str:
+    documents, metadatas = retrieve(question)
 
     context_parts = []
 
@@ -147,8 +151,9 @@ Context:
 
 
 # Manual test
+
 if __name__ == "__main__":
     answer = ask("What is a stack?")
+
     print("\n--- ANSWER ---")
     print(answer)
-
