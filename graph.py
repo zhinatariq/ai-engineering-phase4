@@ -31,24 +31,32 @@ def search_node(state: AgentState) -> AgentState:
 # Direct answer
 
 def direct_node(state: AgentState) -> AgentState:
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        temperature=0,
-        messages=[
-            {
-                "role": "system",
-                "content": "Answer the user's question directly and clearly."
-            },
-            {
-                "role": "user",
-                "content": state["question"]
-            }
-        ]
-    )
+    try:
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            temperature=0,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Answer the user's question directly and clearly."
+                },
+                {
+                    "role": "user",
+                    "content": state["question"]
+                }
+            ]
+        )
 
-    return {
-        "answer": response.choices[0].message.content
-    }
+        return {
+            "answer": response.choices[0].message.content
+        }
+
+    except Exception as e:
+        print(f"direct_node error: {e}")
+
+        return {
+            "answer": "Sorry, I couldn't process your request right now. Please try again."
+        }
 
 
 # Quiz tool
@@ -101,20 +109,28 @@ Course documentation:
 
 """ + context
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        temperature=0,
-        messages=[
-            {
-                "role": "system",
-                "content": system_prompt,
-            },
-            {
-                "role": "user",
-                "content": state["question"],
-            },
-        ],
-    )
+    try:
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            temperature=0,
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {
+                    "role": "user",
+                    "content": state["question"],
+                },
+            ],
+        )
+
+    except Exception as e:
+        print(f"quiz_node API error: {e}")
+
+        return {
+            "answer": "Sorry, I couldn't process your request right now. Please try again."
+        }
 
     quiz_output = response.choices[0].message.content
 
@@ -125,7 +141,9 @@ Course documentation:
             "answer": quiz_output
         }
 
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"quiz_node JSON error: {e}")
+
         return {
             "answer": "Quiz generation failed: the model returned invalid JSON."
         }
@@ -183,32 +201,18 @@ graph.add_edge("direct", END)
 app = graph.compile()
 
 
-# Manual tests
+# Manual tests — repeat run to confirm no crashes across multiple inputs/rounds
 
 if __name__ == "__main__":
+    test_inputs = [
+        "What is a stack?",
+        "What's 2+2?",
+        "Quiz me on linked lists",
+    ]
 
-    result1 = app.invoke({
-        "question": "What is a stack?",
-        "answer": ""
-    })
-
-    print("\nSEARCH PATH")
-    print(result1["answer"])
-
-
-    result2 = app.invoke({
-        "question": "What's 2+2?",
-        "answer": ""
-    })
-
-    print("\nDIRECT PATH")
-    print(result2["answer"])
-
-
-    result3 = app.invoke({
-        "question": "Quiz me on stacks",
-        "answer": ""
-    })
-
-    print("\nQUIZ PATH")
-    print(result3["answer"])
+    for round_num in range(3):
+        print(f"\n=== ROUND {round_num + 1} ===")
+        for question in test_inputs:
+            result = app.invoke({"question": question, "answer": ""})
+            print(f"\nQ: {question}")
+            print(result["answer"])
